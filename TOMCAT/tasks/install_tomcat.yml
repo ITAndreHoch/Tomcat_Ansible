@@ -1,0 +1,123 @@
+---
+# tasks file for TOMCAT
+
+- name: install the latest version of Epel repostitory
+  yum:
+    name: epel-release
+    state: latest
+
+- name: Add repository
+  yum_repository:
+    name: epel
+    description: EPEL YUM repo
+    baseurl: http://download.fedoraproject.org/pub/epel/testing/7/$basearch
+    enabled: yes
+
+
+- name: install JAVA OpenJDK
+  yum:
+    name: java-1.8.0-openjdk.x86_64
+    state: latest
+    update_cache: yes
+  tags: [ install, yum ]
+
+
+- name: Ensure group "tomcat" exists
+  group:
+    name: tomcat
+    state: present
+
+
+- name: Add tomcat user
+  user:
+    name: tomcat
+    shell: /bin/nologin
+    groups: tomcat
+    append: yes
+    home: /opt/tomcat
+
+ 
+- name: Set owner and group for /opt/tomcat
+  file:
+    path: /opt/tomcat
+    owner: tomcat
+    group: tomcat
+    mode: 0750
+
+
+- name: Print Tomcat Version
+  debug:
+    msg: "Installed version of Tomcat - {{ tomcat_ver }}"
+
+
+- name: Download Tomcat 
+  get_url:
+    url: http://www-us.apache.org/dist/tomcat/tomcat-8/v{{ tomcat_ver }}/bin/apache-tomcat-{{ tomcat_ver }}.tar.gz
+    dest: /tmp/apache-tomcat{{ tomcat_ver }}.tar.gz
+    mode: 0440
+
+
+- name: Unarchive a apache-tomcat file 
+  unarchive:
+    src: /tmp/apache-tomcat{{ tomcat_ver }}.tar.gz
+    dest: /opt/tomcat/
+    extra_opts:
+    - --strip-components=1
+
+
+- name: Changing groups for tomcat subdirectories
+  file:
+    group: tomcat
+    path: "{{ item.dest }}"
+    state: directory
+    recurse: "{{ item.recurse }}"
+  with_items:
+    - { dest: '/opt/tomcat/conf', recurse: 'yes'}
+    - { dest: '/opt/tomcat/bin', recurse: 'yes'}
+    - { dest: '/opt/tomcat/lib', recurse: 'yes'}
+
+- name: Changing gropu nad owners form tomcat subdirectories
+  file:
+    owner: tomcat
+    group: root
+    path: "{{ item.dest }}"
+    state: directory
+    recurse: "{{ item.recurse }}"
+  with_items:
+    - { dest: '/opt/tomcat/logs', recurse: 'yes'}
+    - { dest: '/opt/tomcat/temp', recurse: 'yes'}
+    - { dest: '/opt/tomcat/webapps', recurse: 'yes'}
+    - { dest: '/opt/tomcat/work', recurse: 'yes'}
+
+
+- name: Changing mode for files in bin, conf directories
+  file:
+    path: "{{ item.dest }}"
+    mode: "{{ item.mode }}"
+    recurse: yes
+  with_items:
+    - { dest: '/opt/tomcat/conf', mode: 'g+r'}
+    - { dest: '/opt/tomcat/bin', mode: 'g+r'}
+
+
+- name: Changing mode form bin, conf directories
+  file:
+    path: "{{ item.dest }}"
+    mode: "{{ item.mode }}"
+  with_items:
+    - { dest: '/opt/tomcat/conf', mode: 'g+rwx'}
+    - { dest: '/opt/tomcat/bin', mode: 'g+rwx'}
+
+
+- name: Creating systemctl service
+  copy: 
+    src: tomcat.service
+    dest: /etc/systemd/system/tomcat.service
+
+
+- name: enable and start tomcat.service
+  systemd:
+    name: tomcat.service
+    state: started
+    enabled: yes
+

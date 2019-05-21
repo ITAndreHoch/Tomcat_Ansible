@@ -1,0 +1,24 @@
+---
+
+- name: Check catalina environment variables
+  set_fact:
+         catalina_home: /opt/tomcat
+  when: catalina_home == "" 
+
+- name: Display CATALINA_HOME
+  debug:
+    msg: "{{ catalina_home }}"
+
+
+- name: Remove extraneous files and directories
+  file:
+    path: "{{ item.path }}"
+    state: absent
+  with_items:
+    - { path: '{{ catalina_home }}/webapps/js-examples' }
+    - { path: '{{ catalina_home }}/webapps/servlet-example' }
+    - { path: '{{ catalina_home }}/webapps/webdav' }
+    - { path: '{{ catalina_home }}/webapps/tomcat-docs' }
+    - { path: '{{ catalina_home }}/webapps/balancer' }
+    - { path: '{{ catalina_home }}/webapps/ROOT/admin' }
+    - { path: '{{ catalina_home }}/webapps/examples' } 

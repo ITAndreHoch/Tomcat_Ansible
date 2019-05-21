@@ -1,0 +1,4 @@
+---
+# vars file for TOMCAT
+tomcat_ver: "{{ lookup('env','FOLDER') }}"
+catalina_home: "{{ lookup('env','CATALINA_HOME') }}"
